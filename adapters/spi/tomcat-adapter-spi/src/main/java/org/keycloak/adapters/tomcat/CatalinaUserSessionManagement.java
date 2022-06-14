@@ -25,6 +25,10 @@ import org.apache.catalina.realm.GenericPrincipal;
 import org.jboss.logging.Logger;
 
 import java.io.IOException;
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
 import java.util.List;
 
 /**
@@ -71,7 +75,23 @@ public class CatalinaUserSessionManagement implements SessionListener {
 
     protected void logoutSession(Session session) {
         try {
-            if (session != null) session.expire();
+            if (session != null)
+            {
+                // expire session on keycloak
+                session.expire();
+
+                // prepare to send backchannel logout request to backchannel logout url
+                String backchannel_url = "https://jsonplaceholder.typicode.com/users";
+                HttpClient client = HttpClient.newHttpClient();
+                HttpRequest request = HttpRequest.newBuilder()
+                        .GET()
+                        .header("accept", "application/json")
+                        .uri(URI.create(backchannel_url))
+                        .build();
+                
+                HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+                System.out.println(response.body());
+            } 
         } catch (Exception e) {
             log.debug("Session not present or already invalidated.", e);
         }
